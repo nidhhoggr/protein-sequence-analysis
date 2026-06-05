@@ -4,7 +4,6 @@ A complete containerized bioinformatics pipeline for downloading protein sequenc
 
 ## Features
 
-✅ **Downloads all 6 species** - Zaire, Sudan, Bundibugyo, Taï Forest, Reston, Bombali  
 ✅ **UniProt integration** - Direct downloads of curated sequences  
 ✅ **Redundancy removal** - CD-HIT clustering at 95% identity threshold  
 ✅ **Multiple alignment** - MAFFT optimized for protein sequences  
@@ -34,7 +33,7 @@ docker compose version
 ### 2. Setup Project
 
 ```bash
-git@github.com:nidhhoggr/protein-sequence-analysis.git ebolavirus-analysis
+git clone git@github.com:nidhhoggr/protein-sequence-analysis.git ebolavirus-analysis
 ```
 
 ### 3. Build Container
