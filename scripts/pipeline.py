@@ -114,7 +114,14 @@ class EbolavirusAnalysisPipeline:
         try:
             tree = Phylo.read(tree_file, "newick")
             
-            # Collect all terminal nodes (sequences)
+            # Build a mapping of all sequences in the FASTA file
+            fasta_records = {}
+            for record in SeqIO.parse(sequence_fasta, "fasta"):
+                fasta_records[record.id] = record
+            
+            self.log(f"Total sequences in alignment: {len(fasta_records)}")
+            
+            # Collect all terminal nodes from tree
             all_terminals = []
             for clade in tree.find_clades(terminal=True):
                 if clade.name:
@@ -122,42 +129,36 @@ class EbolavirusAnalysisPipeline:
             
             self.log(f"Total sequences in tree: {len(all_terminals)}")
             
-            # Strategy: Sample proportionally from tree structure
-            selected_names = set()
+            # Strategy: Randomly select sequences across the tree
+            selected_ids = set()
             
-            # Ensure minimum representation by depth-first traversal
-            def traverse_and_select(clade, depth=0, max_per_clade=None):
+            # Traverse tree and collect terminal names, then randomly select
+            def collect_and_select(clade, selected_ids):
                 if clade.is_terminal():
-                    if clade.name:
-                        # Probabilistically select to reach target number
-                        if len(selected_names) < self.num_sequences * 0.9:
+                    if clade.name and clade.name in fasta_records:
+                        if len(selected_ids) < self.num_sequences:
                             if random.random() < 0.5:
-                                selected_names.add(clade.name)
+                                selected_ids.add(clade.name)
                 else:
                     for child in clade.clades:
-                        traverse_and_select(child, depth+1)
+                        collect_and_select(child, selected_ids)
             
             # Run multiple passes to reach target number
-            for attempt in range(3):
-                if len(selected_names) >= self.num_sequences:
+            for attempt in range(5):
+                if len(selected_ids) >= self.num_sequences:
                     break
-                traverse_and_select(tree.root)
+                collect_and_select(tree.root, selected_ids)
             
-            # If still short, add random sequences
-            remaining = set(all_terminals) - selected_names
-            needed = self.num_sequences - len(selected_names)
+            # If still short, add random sequences from remaining
+            remaining = set(fasta_records.keys()) - selected_ids
+            needed = self.num_sequences - len(selected_ids)
             if needed > 0 and remaining:
-                selected_names.update(random.sample(list(remaining), min(needed, len(remaining))))
+                selected_ids.update(random.sample(list(remaining), min(needed, len(remaining))))
             
-            self.log(f"Selected {len(selected_names)} sequences via phylogenetic guidance")
+            self.log(f"Selected {len(selected_ids)} sequences via phylogenetic guidance")
             
             # Extract selected sequences to new FASTA
-            selected_records = []
-            for record in SeqIO.parse(sequence_fasta, "fasta"):
-                # Handle various ID formats
-                seq_id = record.id.split("|")[0]  # For GenBank format
-                if seq_id in selected_names or record.description in selected_names:
-                    selected_records.append(record)
+            selected_records = [fasta_records[seq_id] for seq_id in selected_ids if seq_id in fasta_records]
             
             self.log(f"Extracted {len(selected_records)} sequences to {output_fasta}")
             SeqIO.write(selected_records, output_fasta, "fasta")
@@ -166,6 +167,8 @@ class EbolavirusAnalysisPipeline:
             
         except Exception as e:
             self.log(f"ERROR in phylogenetic selection: {str(e)}")
+            import traceback
+            self.log(traceback.format_exc())
             return False
     
     def check_quality(self, fasta_file):
