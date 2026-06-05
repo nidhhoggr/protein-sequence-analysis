@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Download ebolavirus glycoprotein sequences from UniProt
+Download ebolavirus sequences from UniProt
 Downloads separately for each species to ensure complete coverage
 Configurable species mapping and protein filters via JSON config file
 """
@@ -32,17 +32,9 @@ def load_config(config_file):
     {
       "species": {
         "Zaire": "organism_name:Zaire ebolavirus",
-        "Sudan": "organism_name:Sudan ebolavirus",
         ...
       },
       "protein_filter": "protein_name:glycoprotein"
-    }
-    
-    Or just species mapping (protein_filter defaults to glycoprotein):
-    {
-      "Zaire": "organism_name:Zaire ebolavirus",
-      "Sudan": "organism_name:Sudan ebolavirus",
-      ...
     }
     """
     try:
@@ -75,7 +67,7 @@ def download_species_gp(species_name, species_query, protein_filter, output_file
     Args:
         species_name: Display name of the species
         species_query: UniProt query term for this species
-        protein_filter: UniProt query term for protein type (e.g., protein_name:glycoprotein)
+        protein_filter: UniProt query term for protein type
         output_file: Output FASTA file path
     """
     
@@ -206,28 +198,28 @@ Examples:
   # Use default settings (glycoprotein)
   python download_gp_uniprot.py -o sequences
   
-  # Use custom species and protein config
-  python download_gp_uniprot.py -o sequences -c config.json
+  # Use custom config from config/ directory
+  python download_gp_uniprot.py -o sequences -c config/species_config.json
   
   # Inside Docker
   docker compose run ebolavirus-analysis python scripts/download_gp_uniprot.py \\
-    -o sequences
+    -o sequences -c config/species_config.json
+
+Config File Location:
+  Place config files in: ./config/
+  Access in container as: /data/config/
 
 Config File Format (JSON):
-
-Option 1 - With protein filter:
   {
     "species": {
       "Zaire": "organism_name:Zaire ebolavirus",
-      "Sudan": "organism_name:Sudan ebolavirus"
+      "Sudan": "organism_name:Sudan ebolavirus",
+      "Bundibugyo": "organism_name:Bundibugyo ebolavirus",
+      "Taï Forest": "organism_name:Taï Forest ebolavirus",
+      "Reston": "organism_name:Reston ebolavirus",
+      "Bombali": "organism_name:Bombali virus"
     },
     "protein_filter": "protein_name:glycoprotein"
-  }
-
-Option 2 - Simple (uses default glycoprotein filter):
-  {
-    "Zaire": "organism_name:Zaire ebolavirus",
-    "Sudan": "organism_name:Sudan ebolavirus"
   }
 
 Available protein filters:
@@ -245,7 +237,7 @@ Available protein filters:
     )
     parser.add_argument(
         "-c", "--config",
-        help="JSON config file with species and protein settings (optional)"
+        help="JSON config file path (e.g., config/species_config.json)"
     )
     
     args = parser.parse_args()
@@ -257,6 +249,7 @@ Available protein filters:
     if args.config:
         if not Path(args.config).exists():
             print(f"ERROR: Config file not found: {args.config}")
+            print(f"Make sure the config file is in the ./config/ directory")
             sys.exit(1)
         species_map, protein_filter = load_config(args.config)
     

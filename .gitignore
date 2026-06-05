@@ -8,6 +8,7 @@ sequences/*.zip
 
 # Results
 results/
+results.bak/
 *.treefile
 *.iqtree
 *.mldist

@@ -1,6 +1,6 @@
-# Ebolavirus Glycoprotein Sequence Diversity Analysis
+# Protein Sequence Diversity Analysis
 
-A complete containerized bioinformatics pipeline for downloading ebolavirus glycoprotein sequences from UniProt (all 6 species), removing redundancy, aligning, building phylogenetic trees, and selecting diverse representatives across all species to avoid sampling bias.
+A complete containerized bioinformatics pipeline for downloading protein sequences from UniProt (multi species support), removing redundancy, aligning, building phylogenetic trees, and selecting diverse representatives across all species to avoid sampling bias.
 
 ## Features
 
@@ -145,7 +145,7 @@ All three main scripts support custom configuration via JSON config files.
 
 ### Configuration File Format
 
-Create a config file (e.g., `config.json`):
+Create a config file (e.g., `config/config.json`):
 
 ```json
 {
@@ -170,36 +170,21 @@ Create a config file (e.g., `config.json`):
 {
   "Zaire": ["Zaire ebolavirus", "EBOV"],
   "Sudan": ["Sudan ebolavirus", "SUDV"],
-  "Bundibugyo": ["Bundibugyo ebolavirus", "BDBV"],
-  "Taï Forest": ["Taï Forest ebolavirus", "TAFV"],
-  "Reston": ["Reston ebolavirus", "RESTV"],
-  "Bombali": ["Bombali ebolavirus", "BOMV"]
+  "Bundibugyo": ["Bundibugyo", "BDBV"],
+  "Taï Forest": ["Taï Forest", "TAFV"],
+  "Reston": ["Reston", "RESTV"],
+  "Bombali": ["Bombali", "BOMV"]
 }
 ```
 
-### Download Different Proteins
-
-Create `nucleoprotein_config.json`:
-```json
-{
-  "species": {
-    "Zaire": "organism_name:Zaire ebolavirus",
-    "Sudan": "organism_name:Sudan ebolavirus",
-    "Bundibugyo": "organism_name:Bundibugyo ebolavirus",
-    "Taï Forest": "organism_name:Taï Forest ebolavirus",
-    "Reston": "organism_name:Reston ebolavirus",
-    "Bombali": "organism_name:Bombali virus"
-  },
-  "protein_filter": "protein_name:nucleoprotein"
-}
-```
+### Download Proteins
 
 Then:
 ```bash
 docker compose run ebolavirus-analysis \
   python scripts/download_gp_uniprot.py \
   -o sequences_np \
-  -c nucleoprotein_config.json
+  -c config/config.json
 ```
 
 ### Use Custom Config in Pipeline
@@ -209,7 +194,7 @@ docker compose run ebolavirus-analysis \
 docker compose run ebolavirus-analysis \
   python scripts/download_gp_uniprot.py \
   -o sequences \
-  -c config.json
+  -c config/config.json
 ```
 
 **Analysis script:**
@@ -217,7 +202,7 @@ docker compose run ebolavirus-analysis \
 docker compose run ebolavirus-analysis \
   python scripts/analyze_subtypes.py \
   sequences/ebolavirus_gp_combined.fasta \
-  -c analyze_config.json
+  -c config/analyze_config.json
 ```
 
 **Pipeline script:**
@@ -227,7 +212,7 @@ docker compose run ebolavirus-analysis \
   -i sequences/ebolavirus_gp_combined.fasta \
   -o results \
   -n 40 \
-  -c config.json
+  -c config/config.json
 ```
 
 ## Visualizing Results

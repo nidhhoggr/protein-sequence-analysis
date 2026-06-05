@@ -1,0 +1,11 @@
+{
+  "species": {
+    "Zaire": "organism_name:Zaire ebolavirus",
+    "Sudan": "organism_name:Sudan ebolavirus",
+    "Bundibugyo": "organism_name:Bundibugyo ebolavirus",
+    "Taï Forest": "organism_name:Taï Forest ebolavirus",
+    "Reston": "organism_name:Reston ebolavirus",
+    "Bombali": "organism_name:Bombali virus"
+  },
+  "protein_filter": "protein_name:glycoprotein"
+}

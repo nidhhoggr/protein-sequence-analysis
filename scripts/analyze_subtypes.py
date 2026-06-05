@@ -1,23 +1,22 @@
 #!/usr/bin/env python3
 """
 Analyze ebolavirus subtype coverage in glycoprotein sequences
-Configurable species mapping via JSON config file or command line
+Configurable species mapping via JSON config file
 """
 
 import sys
 import json
 from pathlib import Path
 from Bio import SeqIO
-from collections import defaultdict
 
-# Default species mapping (can be overridden by config file)
+# Default species mapping - search keywords in sequence headers
 DEFAULT_SPECIES = {
     'Zaire': ['Zaire ebolavirus', 'EBOV'],
     'Sudan': ['Sudan ebolavirus', 'SUDV'],
-    'Bundibugyo': ['Bundibugyo ebolavirus', 'BDBV'],
-    'Taï Forest': ['Taï Forest ebolavirus', 'TAFV'],
-    'Reston': ['Reston ebolavirus', 'RESTV'],
-    'Bombali': ['Bombali ebolavirus', 'BOMV']
+    'Bundibugyo': ['Bundibugyo', 'BDBV'],
+    'Taï Forest': ['Taï Forest', 'TAFV'],
+    'Reston': ['Reston', 'RESTV'],
+    'Bombali': ['Bombali', 'BOMV']
 }
 
 def load_species_config(config_file):
@@ -34,11 +33,11 @@ def load_species_config(config_file):
     try:
         with open(config_file, 'r') as f:
             config = json.load(f)
-        print(f"Loaded species config from: {config_file}")
+        print(f"Loaded species config from: {config_file}\n")
         return config
     except Exception as e:
         print(f"Error loading config file: {str(e)}")
-        print("Using default species mapping")
+        print("Using default species mapping\n")
         return DEFAULT_SPECIES
 
 
@@ -152,23 +151,23 @@ def main():
         epilog="""
 Examples:
   # Use default species mapping
-  python analyze_subtypes.py sequences
+  python analyze_subtypes.py sequences/ebolavirus_gp_combined.fasta
   
   # Use custom species config file
-  python analyze_subtypes.py sequences -c species_config.json
+  python analyze_subtypes.py sequences/ebolavirus_gp_combined.fasta -c config/analyze_config.json
   
   # Inside Docker
   docker compose run ebolavirus-analysis python scripts/analyze_subtypes.py \\
-    sequences/ebolavirus_gp_combined.fasta
+    sequences/ebolavirus_gp_combined.fasta -c config/analyze_config.json
 
 Species Config File Format (JSON):
   {
     "Zaire": ["Zaire ebolavirus", "EBOV"],
     "Sudan": ["Sudan ebolavirus", "SUDV"],
-    "Bundibugyo": ["Bundibugyo ebolavirus", "BDBV"],
-    "Taï Forest": ["Taï Forest ebolavirus", "TAFV"],
-    "Reston": ["Reston ebolavirus", "RESTV"],
-    "Bombali": ["Bombali ebolavirus", "BOMV"]
+    "Bundibugyo": ["Bundibugyo", "BDBV"],
+    "Taï Forest": ["Taï Forest", "TAFV"],
+    "Reston": ["Reston", "RESTV"],
+    "Bombali": ["Bombali", "BOMV"]
   }
         """
     )

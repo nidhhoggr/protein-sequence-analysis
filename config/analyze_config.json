@@ -1,0 +1,8 @@
+{
+  "Zaire": ["Zaire ebolavirus", "EBOV"],
+  "Sudan": ["Sudan ebolavirus", "SUDV"],
+  "Bundibugyo": ["Bundibugyo", "BDBV"],
+  "Taï Forest": ["Taï Forest", "TAFV"],
+  "Reston": ["Reston", "RESTV"],
+  "Bombali": ["Bombali", "BOMV"]
+}

@@ -59,7 +59,7 @@ RUN echo "conda activate bio" >> ~/.bashrc
 WORKDIR /data
 
 # Create data directories
-RUN mkdir -p /data/sequences /data/results /data/scripts
+RUN mkdir -p /data/sequences /data/results /data/scripts /data/config
 
 # Copy entrypoint script
 COPY entrypoint.sh /entrypoint.sh
