@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  ebolavirus-analysis:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ebolavirus-analysis
+    volumes:
+      # Mount local directories into container
+      - ./sequences:/data/sequences
+      - ./results:/data/results
+      - ./scripts:/data/scripts
+    working_dir: /data
+    stdin_open: true
+    tty: true
+    environment:
+      - PYTHONUNBUFFERED=1
+
+    # Example: uncomment to run pipeline automatically
+    # command: python scripts/pipeline.py -i sequences/input.fasta -o results -n 40

@@ -1,0 +1,54 @@
+# Sequence data
+sequences/*.fasta
+sequences/*.fa
+sequences/*.faa
+sequences/*.fna
+sequences/ncbi_dataset/
+sequences/*.zip
+
+# Results
+results/
+*.treefile
+*.iqtree
+*.mldist
+*.model
+*.ufboot
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+
+tr
