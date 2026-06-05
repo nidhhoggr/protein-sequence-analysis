@@ -34,20 +34,7 @@ docker compose version
 ### 2. Setup Project
 
 ```bash
-# Create project directory
-mkdir ebolavirus-analysis
-cd ebolavirus-analysis
-
-# Create subdirectories
-mkdir sequences results scripts
-
-# Copy these files:
-# - Dockerfile
-# - docker-compose.yml
-# - pipeline.py
-# - download_gp_uniprot.py
-# - analyze_subtypes.py
-# - utils.py
+git@github.com:nidhhoggr/protein-sequence-analysis.git ebolavirus-analysis
 ```
 
 ### 3. Build Container
