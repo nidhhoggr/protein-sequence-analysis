@@ -15,14 +15,14 @@ from pathlib import Path
 DEFAULT_SPECIES = {
     'Zaire': 'organism_name:Zaire ebolavirus',
     'Sudan': 'organism_name:Sudan ebolavirus',
-    'Bundibugyo': 'organism_name:Bundibugyo ebolavirus',
+    'Bundibugyo': 'organism_name:Bundibugyo virus',
     'Taï Forest': 'organism_name:Taï Forest ebolavirus',
     'Reston': 'organism_name:Reston ebolavirus',
     'Bombali': 'organism_name:Bombali virus'
 }
 
 # Default protein filter
-DEFAULT_PROTEIN_FILTER = 'protein_name:glycoprotein'
+DEFAULT_PROTEIN_FILTER = 'protein_name:envelope glycoprotein'
 
 def load_config(config_file):
     """
@@ -34,7 +34,7 @@ def load_config(config_file):
         "Zaire": "organism_name:Zaire ebolavirus",
         ...
       },
-      "protein_filter": "protein_name:glycoprotein"
+      "protein_filter": "protein_name:envelope glycoprotein"
     }
     """
     try:
@@ -214,12 +214,12 @@ Config File Format (JSON):
     "species": {
       "Zaire": "organism_name:Zaire ebolavirus",
       "Sudan": "organism_name:Sudan ebolavirus",
-      "Bundibugyo": "organism_name:Bundibugyo ebolavirus",
+      "Bundibugyo": "organism_name:Bundibugyo virus",
       "Taï Forest": "organism_name:Taï Forest ebolavirus",
       "Reston": "organism_name:Reston ebolavirus",
       "Bombali": "organism_name:Bombali virus"
     },
-    "protein_filter": "protein_name:glycoprotein"
+    "protein_filter": "protein_name:envelope glycoprotein"
   }
 
 Available protein filters:
