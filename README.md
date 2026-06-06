@@ -1,16 +1,21 @@
 # Protein Sequence Diversity Analysis
 
-A complete containerized bioinformatics pipeline for downloading protein sequences from UniProt (multi species support), removing redundancy, aligning, building phylogenetic trees, and selecting diverse representatives across all species to avoid sampling bias.
+A complete containerized bioinformatics pipeline for downloading protein sequences from UniProt, removing redundancy, aligning, building phylogenetic trees, and selecting diverse representatives while avoiding sampling bias.
+
+**Works for any organism** - not just ebolavirus. Choose between phylogenetic or species-balanced diversity selection.
 
 ## Features
 
 ✅ **UniProt integration** - Direct downloads of curated sequences  
-✅ **Redundancy removal** - CD-HIT clustering at 95% identity threshold  
-✅ **Multiple alignment** - MAFFT optimized for protein sequences  
-✅ **Phylogenetic inference** - IQ-TREE with 1000 bootstrap replicates  
-✅ **Diversity-aware selection** - Phylogenetic tree-guided sampling  
-✅ **No species bias** - Balanced representation across all 6 ebolavirus species  
-✅ **Fully configurable** - JSON config files for species, proteins, and parameters  
+✅ **Redundancy removal** - CD-HIT clustering (configurable threshold)  
+✅ **Multiple alignment** - MAFFT optimized for protein/nucleotide sequences  
+✅ **Phylogenetic inference** - IQ-TREE with 1000 bootstrap replicates or FastTree  
+✅ **Two diversity strategies**:
+  - Tree-guided selection (maximum evolutionary coverage)
+  - Species-balanced selection (equal per species)  
+✅ **No sampling bias** - Balanced representation across all species  
+✅ **Fully configurable** - JSON config files and command-line arguments  
+✅ **Generic design** - Works for any organism, not just viruses  
 ✅ **Complete logging** - Full pipeline logs and statistics  
 
 ## System Requirements
@@ -33,7 +38,8 @@ docker compose version
 ### 2. Setup Project
 
 ```bash
-git clone git@github.com:nidhhoggr/protein-sequence-analysis.git ebolavirus-analysis
+git clone git@github.com:nidhhoggr/protein-sequence-analysis.git
+cd protein-sequence-analysis
 ```
 
 ### 3. Build Container
@@ -42,168 +48,82 @@ git clone git@github.com:nidhhoggr/protein-sequence-analysis.git ebolavirus-anal
 docker compose build
 ```
 
-This takes 10-15 minutes the first time (installs all bioinformatics tools).
+Takes 10-15 minutes the first time (installs all bioinformatics tools).
 
 ## Quick Start
 
-### Step 1: Download Glycoprotein Sequences
+### Step 1: Download Sequences from UniProt
 
-Download all 6 species from UniProt:
-
+For ebolavirus example:
 ```bash
 docker compose run ebolavirus-analysis \
   python scripts/download_gp_uniprot.py \
   -o sequences
 ```
 
-**Output:** 
-- Individual files for each species:
-  - `sequences/ebolavirus_gp_zaire.fasta`
-  - `sequences/ebolavirus_gp_sudan.fasta`
-  - `sequences/ebolavirus_gp_bundibugyo.fasta`
-  - `sequences/ebolavirus_gp_tai_forest.fasta`
-  - `sequences/ebolavirus_gp_reston.fasta`
-  - `sequences/ebolavirus_gp_bombali.fasta`
+For custom organism, edit `config/config.json` with your species and run above.
+
+**Output:**
+- Individual files per species in `sequences/`
 - Combined file: `sequences/ebolavirus_gp_combined.fasta`
-- Total: ~550 sequences across all species
+- ~460 total sequences (if using envelope glycoprotein filter)
 
-### Step 2: Analyze Species Coverage
+### Step 2: Choose Your Diversity Strategy
 
-Check that you have sequences from all 6 species:
+#### Option A: Species-Balanced Selection (Recommended for imbalanced data)
+
+Use this when you have many sequences from one species and few from others:
 
 ```bash
 docker compose run ebolavirus-analysis \
-  python scripts/analyze_subtypes.py \
-  sequences/ebolavirus_gp_combined.fasta
+  python scripts/balanced_diversity_pipeline.py \
+  -i sequences/ebolavirus_gp_combined.fasta \
+  --target-per-species 5
 ```
 
-This shows counts for each species and warns if any are missing.
+**What it does:**
+1. Selects equal number of sequences from each species (balanced)
+2. CD-HIT clustering to remove near-duplicates
+3. MAFFT alignment
+4. IQ-TREE tree building
 
-### Step 3: Run Full Analysis Pipeline
+**Best for:** Imbalanced datasets (e.g., 400 Zaire vs 3 Bundibugyo)
 
-This performs clustering, alignment, tree building, and diversity selection:
+#### Option B: Phylogenetic Tree-Guided Selection (Maximum diversity)
+
+Use this when you want maximum evolutionary coverage:
 
 ```bash
 docker compose run ebolavirus-analysis \
-  python scripts/pipeline.py \
+  python scripts/generic_pipeline.py \
   -i sequences/ebolavirus_gp_combined.fasta \
-  -o results \
   -n 40
 ```
 
-**Pipeline steps:**
-1. **CD-HIT clustering** (5 min) - Removes redundant sequences at 95% identity
-2. **MAFFT alignment** (2-5 min) - Aligns protein sequences
-3. **IQ-TREE inference** (10-30 min) - Builds phylogenetic tree with bootstraps
-4. **Phylogenetic selection** (<1 min) - Picks 40 diverse sequences
+**What it does:**
+1. CD-HIT clustering to remove redundancy
+2. MAFFT alignment
+3. IQ-TREE tree building
+4. Selects 40 sequences spread across phylogenetic tree
 
-**Total runtime:** ~30-45 minutes
+**Best for:** Large datasets where you want diversity across all clades
 
-### Step 4: View Results
+### Step 3: View Results
 
 ```bash
 # List output files
 ls -lh results/
 
-# Count final sequences
-grep "^>" results/ebolavirus_diverse_dataset.fasta | wc -l
+# For balanced approach
+grep "^>" results/sequences_balanced.fasta | wc -l
+grep "^>" results/sequences_clustered.fasta | wc -l
+grep "^>" results/sequences_aligned.fasta | wc -l
 
-# View sequence IDs
-grep "^>" results/ebolavirus_diverse_dataset.fasta | head -20
+# For tree-guided approach  
+grep "^>" results/diverse_dataset.fasta | wc -l
 ```
 
-## Output Files
-
-After running the pipeline, `results/` contains:
-
-| File | Description |
-|------|-------------|
-| `ebolavirus_diverse_dataset.fasta` | **Your final result**: 40 diverse sequences |
-| `sequences_nonredundant.fasta` | After CD-HIT clustering |
-| `sequences_aligned.fasta` | MAFFT multiple sequence alignment |
-| `tree.treefile` | Newick format phylogenetic tree |
-| `tree.iqtree` | Detailed IQ-TREE output & statistics |
-| `pipeline.log` | Full execution log |
-
-## Configurable Settings
-
-All three main scripts support custom configuration via JSON config files.
-
-### Configuration File Format
-
-Create a config file (e.g., `config/config.json`):
-
-```json
-{
-  "species": {
-    "Zaire": "organism_name:Zaire ebolavirus",
-    "Sudan": "organism_name:Sudan ebolavirus",
-    "Bundibugyo": "organism_name:Bundibugyo ebolavirus",
-    "Taï Forest": "organism_name:Taï Forest ebolavirus",
-    "Reston": "organism_name:Reston ebolavirus",
-    "Bombali": "organism_name:Bombali virus"
-  },
-  "protein_filter": "protein_name:glycoprotein"
-}
-```
-
-**For download_gp_uniprot.py and pipeline.py:**
-- `species`: UniProt organism_name queries for each species
-- `protein_filter`: UniProt protein_name filter (glycoprotein, nucleoprotein, polymerase, etc.)
-
-**For analyze_subtypes.py:**
-```json
-{
-  "Zaire": ["Zaire ebolavirus", "EBOV"],
-  "Sudan": ["Sudan ebolavirus", "SUDV"],
-  "Bundibugyo": ["Bundibugyo", "BDBV"],
-  "Taï Forest": ["Taï Forest", "TAFV"],
-  "Reston": ["Reston", "RESTV"],
-  "Bombali": ["Bombali", "BOMV"]
-}
-```
-
-### Download Proteins
-
-Then:
-```bash
-docker compose run ebolavirus-analysis \
-  python scripts/download_gp_uniprot.py \
-  -o sequences_np \
-  -c config/config.json
-```
-
-### Use Custom Config in Pipeline
-
-**Download script:**
-```bash
-docker compose run ebolavirus-analysis \
-  python scripts/download_gp_uniprot.py \
-  -o sequences \
-  -c config/config.json
-```
-
-**Analysis script:**
-```bash
-docker compose run ebolavirus-analysis \
-  python scripts/analyze_subtypes.py \
-  sequences/ebolavirus_gp_combined.fasta \
-  -c config/analyze_config.json
-```
-
-**Pipeline script:**
-```bash
-docker compose run ebolavirus-analysis \
-  python scripts/pipeline.py \
-  -i sequences/ebolavirus_gp_combined.fasta \
-  -o results \
-  -n 40 \
-  -c config/config.json
-```
-
-## Visualizing Results
-
-### View the Phylogenetic Tree
+### Step 4: Visualize Phylogenetic Tree
 
 **Online (easiest):**
 1. Go to [iTOL](https://itol.embl.de/)
@@ -212,61 +132,98 @@ docker compose run ebolavirus-analysis \
 
 **Locally:**
 ```bash
-# Install FigTree
-brew install figtree  # macOS
-# Then open the tree file
+# Install FigTree (macOS)
+brew install figtree
 figtree results/tree.treefile
 ```
 
-### View the Alignment
+## Output Files
 
-Download and use [AliView](http://www.ormbunkar.se/aliview/):
-```bash
-aliview results/sequences_aligned.fasta
+### Balanced Pipeline Output
+
+| File | Description |
+|------|-------------|
+| `sequences_balanced.fasta` | Equal sequences per species (~5 each) |
+| `sequences_clustered.fasta` | After CD-HIT redundancy removal |
+| `sequences_aligned.fasta` | MAFFT multiple sequence alignment |
+| `tree.treefile` | Phylogenetic tree (Newick format) |
+| `pipeline.log` | Full execution log |
+
+### Tree-Guided Pipeline Output
+
+| File | Description |
+|------|-------------|
+| `sequences_nonredundant.fasta` | After CD-HIT clustering |
+| `sequences_aligned.fasta` | MAFFT multiple sequence alignment |
+| `diverse_dataset.fasta` | Final selected sequences |
+| `tree.treefile` | Phylogenetic tree |
+| `pipeline.log` | Full execution log |
+
+## Configuration
+
+### Download Custom Organisms
+
+Edit `config/config.json`:
+
+```json
+{
+  "species": {
+    "Species1": "organism_name:Exact species name",
+    "Species2": "organism_name:Another species"
+  },
+  "protein_filter": "protein_name:envelope glycoprotein"
+}
 ```
 
-## Advanced Usage
-
-### Change Number of Selected Sequences
-
+Then download:
 ```bash
 docker compose run ebolavirus-analysis \
-  python scripts/pipeline.py \
-  -i sequences/ebolavirus_gp_combined.fasta \
+  python scripts/download_gp_uniprot.py \
+  -o sequences \
+  -c config/config.json
+```
+
+### Pipeline Command-Line Options
+
+#### Balanced Diversity Pipeline
+
+```bash
+python scripts/balanced_diversity_pipeline.py \
+  -i sequences.fasta \
   -o results \
-  -n 50  # Select 50 instead of 40
+  --target-per-species 5 \
+  --cd-hit-threshold 0.80 \
+  --seq-type protein
 ```
 
-### Use Faster Tree Building
+Options:
+- `-i, --input` - Input FASTA file (required)
+- `-o, --output` - Output directory (default: results)
+- `--target-per-species` - Sequences per species (default: auto)
+- `--cd-hit-threshold` - Identity threshold 0.60-0.95 (default: 0.80)
+- `--seq-type` - `protein` or `nucleotide` (default: protein)
 
-For large datasets, use FastTree instead of IQ-TREE:
+#### Tree-Guided Pipeline
 
 ```bash
-docker compose run ebolavirus-analysis \
-  python scripts/pipeline.py \
-  -i sequences/ebolavirus_gp_combined.fasta \
+python scripts/generic_pipeline.py \
+  -i sequences.fasta \
   -o results \
   -n 40 \
-  --use-fasttree
+  --cd-hit-threshold 0.95 \
+  --use-fasttree \
+  --seq-type protein
 ```
 
-### Interactive Session
+Options:
+- `-i, --input` - Input FASTA file (required)
+- `-o, --output` - Output directory (default: results)
+- `-n, --num-sequences` - Target sequences to select (default: 40)
+- `--cd-hit-threshold` - Identity threshold (default: 0.95)
+- `--use-fasttree` - Use FastTree instead of IQ-TREE (faster)
+- `--seq-type` - `protein` or `nucleotide` (default: protein)
 
-For manual analysis or debugging:
-
-```bash
-docker compose run ebolavirus-analysis bash
-```
-
-Now you have access to all tools:
-```bash
-# Inside container:
-cd /data
-mafft --version
-iqtree --version
-cd-hit --version
-python3
-```
+## Advanced Usage
 
 ### Run Individual Steps
 
@@ -280,91 +237,95 @@ docker compose run ebolavirus-analysis bash -c \
 docker compose run ebolavirus-analysis bash -c \
   "mafft --auto results/nr.fasta > results/aligned.fasta"
 
-# Just tree building
+# Just tree building (IQ-TREE)
 docker compose run ebolavirus-analysis bash -c \
   "iqtree -s results/aligned.fasta -st AA -m LG+G -bb 1000 -nt AUTO"
 ```
 
-## Pipeline Details
+### Use FastTree for Speed
 
-### What Each Species Contributes
+For large datasets, FastTree is 10-100x faster than IQ-TREE:
 
-From UniProt downloads:
-- **Zaire ebolavirus**: 487 sequences (most common)
-- **Sudan ebolavirus**: 24 sequences
-- **Bundibugyo ebolavirus**: 3 sequences
-- **Taï Forest ebolavirus**: 11 sequences
-- **Reston ebolavirus**: 25 sequences
-- **Bombali virus**: 8 sequences
+```bash
+docker compose run ebolavirus-analysis \
+  python scripts/generic_pipeline.py \
+  -i sequences.fasta \
+  -n 40 \
+  --use-fasttree
+```
 
-### Diversity Selection Strategy
+### Interactive Shell
 
-The pipeline uses phylogenetic guidance to avoid bias:
+For manual analysis:
 
-1. **Clustering** removes near-identical duplicates (keeps structural variants)
-2. **Tree building** reveals evolutionary relationships between sequences
-3. **Clade-aware sampling** selects representatives from each major branch
-4. **Result**: Balanced dataset across all species, no oversampling of similar strains
+```bash
+docker compose run ebolavirus-analysis bash
+```
 
-### Quality Metrics
+Inside container:
+```bash
+cd /data
+mafft --version
+iqtree --version
+cd-hit --version
+```
 
-The pipeline reports:
-- Total sequences processed
-- Sequences after redundancy removal
-- Alignment length and gaps
-- Tree depth and clade structure
-- Final diversity statistics
+### Nucleotide Sequences
+
+Both pipelines support DNA/RNA:
+
+```bash
+# Balanced selection for nucleotides
+python scripts/balanced_diversity_pipeline.py \
+  -i dna_sequences.fasta \
+  --seq-type nucleotide
+
+# Tree-guided for nucleotides
+python scripts/generic_pipeline.py \
+  -i dna_sequences.fasta \
+  --seq-type nucleotide
+```
+
+## When to Use Which Pipeline
+
+| Scenario | Use |
+|----------|-----|
+| Imbalanced species (e.g., 400 Zaire, 3 Bundibugyo) | **Balanced** |
+| Large dataset, want maximum diversity | **Tree-guided** |
+| Already balanced species representation | Either |
+| Small dataset (<50 seqs) | **Balanced** |
+| Massive dataset (>1000 seqs) | **Tree-guided** with FastTree |
+
+## Understanding CD-HIT Thresholds
+
+- **0.95 (default for tree-guided)**: Very aggressive, removes more sequences
+- **0.80 (default for balanced)**: Moderate, balances diversity vs redundancy removal
+- **0.70**: Less aggressive, keeps more sequences but may retain near-duplicates
+- **0.60**: Minimal clustering, keep almost everything
+
+**Lower threshold = more sequences kept = slower analysis but better diversity**
 
 ## Troubleshooting
 
-### "docker compose: command not found"
+### Out of Memory
 
-Docker Compose should come with Docker Desktop (macOS/Windows). On Linux:
+Increase Docker memory:
+- Docker Desktop: Settings → Resources → Memory → 8GB+
+- Or edit `docker-compose.yml`:
+  ```yaml
+  services:
+    ebolavirus-analysis:
+      mem_limit: 8g
+  ```
+
+### Pipeline Takes Too Long
+
+Use FastTree instead of IQ-TREE:
 ```bash
-sudo apt-get install docker-compose-plugin
+python scripts/generic_pipeline.py -i sequences.fasta --use-fasttree
 ```
 
-Or use older syntax:
-```bash
-docker-compose run ...  # Old syntax
-docker compose run ...  # New syntax (preferred)
-```
-
-### Out of Memory Errors
-
-Increase Docker's memory allocation:
-
-**Docker Desktop GUI:**
-- Settings → Resources → Memory → Increase to 8GB+
-
-**Or edit docker-compose.yml:**
-```yaml
-services:
-  ebolavirus-analysis:
-    mem_limit: 8g
-```
-
-### IQ-TREE Takes Too Long
-
-Use FastTree instead (faster, slightly less accurate):
-```bash
-docker compose run ebolavirus-analysis \
-  python scripts/pipeline.py \
-  -i sequences/ebolavirus_gp_combined.fasta \
-  -o results --use-fasttree
-```
-
-### Sequences Not Found
-
-Make sure the file path is correct:
-```bash
-docker compose run ebolavirus-analysis bash -c \
-  "ls -lh sequences/"
-```
-
-Files should be in `sequences/` directory directly.
-
-### Pipeline Crashes Midway
+### Missing Sequences in Results
 
 Check the log file:
 ```bash
@@ -373,44 +334,72 @@ docker compose run ebolavirus-analysis bash -c \
 ```
 
 Common issues:
-- Out of disk space: `df -h`
-- Out of memory: Increase Docker memory
-- Network issues: Check internet connection
+- Sequences too similar (try lower `--cd-hit-threshold`)
+- Corrupted FASTA file (verify with `docker compose run ebolavirus-analysis bash -c "head -20 sequences/your_file.fasta"`)
+- Alignment failed (check sequence lengths vary too much)
+
+### CD-HIT Not Removing Redundancy
+
+Lower the threshold - 0.95 may be too high for your sequences:
+```bash
+python scripts/balanced_diversity_pipeline.py \
+  -i sequences.fasta \
+  --cd-hit-threshold 0.80
+```
+
+### "docker compose: command not found"
+
+Update Docker or use older syntax:
+```bash
+docker-compose run ebolavirus-analysis ...  # Old
+docker compose run ebolavirus-analysis ...   # New (preferred)
+```
 
 ## Clean Up
 
-### Remove Orphan Containers
-
 ```bash
+# Remove old containers
 docker compose down --remove-orphans
-```
 
-### Delete Results and Start Over
-
-```bash
+# Delete results and start over
 rm -rf results/*
-docker compose run ebolavirus-analysis \
-  python scripts/pipeline.py \
-  -i sequences/ebolavirus_gp_combined.fasta \
-  -o results -n 40
-```
 
-### Clean Up Everything
-
-```bash
+# Clean everything
 docker compose down -v
 rm -rf results sequences
 ```
 
 ## Next Steps with Your Data
 
-Once you have your 40 diverse sequences:
+Once you have your selected sequences:
 
-1. **Structural analysis** - Use ColabFold for 3D protein structure prediction
-2. **Sequence evolution** - Analyze conservation with ConSurf
-3. **Antibody targeting** - Identify epitopes for vaccine design
-4. **Molecular dynamics** - Simulate protein behavior with GROMACS
-5. **Comparative genomics** - Study functional domains across species
+1. **3D Structure Prediction** - [ColabFold](https://github.com/sokrypton/ColabFold)
+2. **Sequence Conservation** - [ConSurf](https://consurf.tau.ac.il/)
+3. **Epitope Mapping** - IEDB, BepiPred
+4. **Molecular Dynamics** - GROMACS, NAMD
+5. **Domain Analysis** - InterProScan, Pfam
+6. **Comparative Analysis** - Multiple sequence comparison tools
+
+## For Ebolavirus Specifically
+
+The original ebolavirus-specific scripts still work:
+
+```bash
+# Download ebolavirus sequences
+docker compose run ebolavirus-analysis \
+  python scripts/download_gp_uniprot.py -o sequences
+
+# Analyze species coverage
+docker compose run ebolavirus-analysis \
+  python scripts/analyze_subtypes.py sequences/ebolavirus_gp_combined.fasta
+
+# Original pipeline (less flexible but still works)
+docker compose run ebolavirus-analysis \
+  python scripts/pipeline.py \
+  -i sequences/ebolavirus_gp_combined.fasta \
+  -o results \
+  -n 40
+```
 
 ## Citations
 
@@ -418,6 +407,7 @@ If you use this pipeline, please cite:
 
 - **MAFFT**: Katoh K, et al. (2005) MAFFT: a novel method for rapid multiple sequence alignment
 - **IQ-TREE**: Nguyen LT, Schmidt HA, et al. (2015) IQ-TREE: A fast and effective stochastic algorithm
+- **FastTree**: Price MN, et al. (2010) FastTree 2: approximately maximum-likelihood trees for large alignments
 - **CD-HIT**: Li W, Godzik A. (2006) Cd-hit: a fast program for clustering and comparing large sets
 - **Biopython**: Cock PJ, et al. (2009) Biopython: freely available Python tools for computational molecular biology
 
@@ -426,10 +416,10 @@ If you use this pipeline, please cite:
 For issues:
 
 1. Check `results/pipeline.log` for error details
-2. Review this README's troubleshooting section
-3. Verify Docker installation: `docker compose version`
-4. Check available disk/memory: `df -h` and `free -h`
-5. Test UniProt connectivity: `curl https://rest.uniprot.org/uniprotkb/search`
+2. Review troubleshooting section above
+3. Verify Docker: `docker compose version`
+4. Check disk/memory: `df -h` and `docker stats`
+5. Test internet: `docker compose run ebolavirus-analysis bash -c "curl -I https://rest.uniprot.org/"`
 
 ## License
 
